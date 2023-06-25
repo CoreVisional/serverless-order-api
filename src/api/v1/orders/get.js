@@ -25,7 +25,7 @@ const fetchAllOrders = async (allData = [], exclusiveStartKey = null) => {
     if (data.LastEvaluatedKey) {
         return await fetchAllOrders(allData, data.LastEvaluatedKey);
     } else {
-        return data.Items;
+        return allData;
     }
 };
 
