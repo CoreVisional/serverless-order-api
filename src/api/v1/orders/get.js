@@ -1,5 +1,6 @@
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { unmarshall } from "@aws-sdk/util-dynamodb";
 
 const tableName = process.env.ORDER_TABLE;
 
@@ -18,7 +19,8 @@ const fetchAllOrders = async (allData = [], exclusiveStartKey = null) => {
     let data = await ddbDocClient.send(command);
 
     if (data.Items.length > 0) {
-        allData = [...allData, ...data.Items];
+        const unmarshalledItems = data.Items.map((item) => unmarshall(item));
+        allData = [...allData, ...unmarshalledItems];
     }
 
     // Paginate items by checking LastEvaluatedKey
