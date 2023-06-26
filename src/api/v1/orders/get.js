@@ -3,10 +3,14 @@ import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 const tableName = process.env.ORDER_TABLE;
 
+if (!tableName) {
+    throw new Error("The ORDER_TABLE environment variable is not set");
+}
+
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
-const fetchAllOrders = async (allData = [], exclusiveStartKey = null) => {
+const fetchAllOrders = async (exclusiveStartKey = null) => {
     let params = {
         TableName: tableName,
     };
@@ -20,16 +24,20 @@ const fetchAllOrders = async (allData = [], exclusiveStartKey = null) => {
 
     let data = await ddbDocClient.send(command);
 
+    // Start with empty array if no previous data provided
+    let allData = [];
+
     if (data.Items.length > 0) {
         allData = [...allData, ...data.Items];
     }
 
     // Paginate items by checking LastEvaluatedKey
     if (data.LastEvaluatedKey) {
-        return await fetchAllOrders(allData, data.LastEvaluatedKey);
-    } else {
-        return allData;
+        const nextData = await fetchAllOrders(data.LastEvaluatedKey);
+        allData = [...allData, ...nextData];
     }
+
+    return allData;
 };
 
 export const getOrders = async (event) => {
@@ -39,18 +47,18 @@ export const getOrders = async (event) => {
         );
     }
 
-    let items = {};
-
     try {
-        items = await fetchAllOrders();
+        const items = await fetchAllOrders();
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify(items),
+        };
     } catch (err) {
-        console.log("Failure", err.message);
+        console.error("Failure", err.message);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: err.message }),
+        };
     }
-
-    const response = {
-        statusCode: 200,
-        body: JSON.stringify(items),
-    };
-
-    return response;
 };
