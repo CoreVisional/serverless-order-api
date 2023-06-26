@@ -1,6 +1,5 @@
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 const tableName = process.env.ORDER_TABLE;
 
@@ -10,8 +9,11 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 const fetchAllOrders = async (allData = [], exclusiveStartKey = null) => {
     let params = {
         TableName: tableName,
-        ExclusiveStartKey: exclusiveStartKey,
     };
+
+    if (exclusiveStartKey) {
+        params.ExclusiveStartKey = exclusiveStartKey;
+    }
 
     // Use Scan operator to fetch whole items from table
     const command = new ScanCommand(params);
@@ -19,8 +21,7 @@ const fetchAllOrders = async (allData = [], exclusiveStartKey = null) => {
     let data = await ddbDocClient.send(command);
 
     if (data.Items.length > 0) {
-        const unmarshalledItems = data.Items.map((item) => unmarshall(item));
-        allData = [...allData, ...unmarshalledItems];
+        allData = [...allData, ...data.Items];
     }
 
     // Paginate items by checking LastEvaluatedKey
