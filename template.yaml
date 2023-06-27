@@ -84,6 +84,12 @@ Resources:
       CodeUri: src/api/functions/post-orders/
       Handler: app.postOrders
       Runtime: nodejs18.x
+      Events:
+        SQSEventSource:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt OrderQueue.Arn
+            BatchSize: 10
       Environment:
         Variables:
           ORDER_TABLE: !Ref OrderTable
@@ -199,6 +205,16 @@ Resources:
       Roles:
         - Ref: "ApiGwExecutionRole"
 
+  OrderQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt OrderDLQueue.Arn
+        maxReceiveCount: 5
+
+  OrderDLQueue:
+    Type: AWS::SQS::Queue
+
 Outputs:
   DynamoDBTableName:
     Description: "DynamoDB Table Name"
@@ -227,3 +243,11 @@ Outputs:
   OrderApiEndpoint:
     Description: "API Gateway endpoint URL for Dev stage for Order Get function"
     Value: !Sub "https://${OrderApi}.execute-api.${AWS::Region}.amazonaws.com/Dev/orders/"
+
+  OrderQueueUrl:
+    Description: "URL of order queue"
+    Value: !Ref OrderQueue
+
+  OrderDLQueueUrl:
+    Description: "URL of order dead-letter queue"
+    Value: !Ref OrderDLQueue
