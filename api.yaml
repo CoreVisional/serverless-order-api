@@ -47,3 +47,24 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSingleOrder.Arn}/invocations
         passthroughBehavior: "when_no_match"
+
+    put:
+      produces:
+        - "application/json"
+      parameters:
+        - name: "orderId"
+          in: "path"
+          required: true
+          type: "string"
+      responses: {}
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: [ApiGwExecutionRole, Arn]
+        httpMethod: "POST"
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateOrder.Arn}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        type: "aws_proxy"
