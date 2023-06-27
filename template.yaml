@@ -126,6 +126,30 @@ Resources:
             Resource:
               - "*"
 
+  DeleteOrder:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/api/functions/delete-order/
+      Handler: app.deleteOrder
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ORDER_TABLE: !Ref OrderTable
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:DeleteItem
+            Resource:
+              - !Sub
+                - "arn:aws:dynamodb:*:*:table/${Table}"
+                - { Table: !Ref OrderTable }
+          - Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - "*"
+
   OrderApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -171,6 +195,7 @@ Resources:
             - !GetAtt GetSingleOrder.Arn
             - !GetAtt PostOrders.Arn
             - !GetAtt UpdateOrder.Arn
+            - !GetAtt DeleteOrder.Arn
       Roles:
         - Ref: "ApiGwExecutionRole"
 
@@ -194,6 +219,10 @@ Outputs:
   UpdateOrder:
     Description: "UpdateOrder Lambda Function ARN"
     Value: !GetAtt UpdateOrder.Arn
+
+  DeleteOrder:
+    Description: "DeleteOrder Lambda Function ARN"
+    Value: !GetAtt DeleteOrder.Arn
 
   OrderApiEndpoint:
     Description: "API Gateway endpoint URL for Dev stage for Order Get function"
