@@ -102,6 +102,30 @@ Resources:
             Resource:
               - "*"
 
+  UpdateOrder:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/api/functions/update-order/
+      Handler: app.updateOrder
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ORDER_TABLE: !Ref OrderTable
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:UpdateItem
+            Resource:
+              - !Sub
+                - "arn:aws:dynamodb:*:*:table/${Table}"
+                - { Table: !Ref OrderTable }
+          - Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - "*"
+
   OrderApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -146,6 +170,7 @@ Resources:
             - !GetAtt GetOrders.Arn
             - !GetAtt GetSingleOrder.Arn
             - !GetAtt PostOrders.Arn
+            - !GetAtt UpdateOrder.Arn
       Roles:
         - Ref: "ApiGwExecutionRole"
 
@@ -165,6 +190,10 @@ Outputs:
   PostOrders:
     Description: "PostOrders Lambda Function ARN"
     Value: !GetAtt PostOrders.Arn
+
+  UpdateOrder:
+    Description: "UpdateOrder Lambda Function ARN"
+    Value: !GetAtt UpdateOrder.Arn
 
   OrderApiEndpoint:
     Description: "API Gateway endpoint URL for Dev stage for Order Get function"
