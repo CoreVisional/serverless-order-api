@@ -194,12 +194,13 @@ Resources:
         Version: "2012-10-17"
         Statement:
           Action:
+            - sqs:SendMessage
             - lambda:*
           Effect: Allow
           Resource:
             - !GetAtt GetOrders.Arn
             - !GetAtt GetSingleOrder.Arn
-            - !GetAtt PostOrders.Arn
+            - !GetAtt OrderQueue.Arn
             - !GetAtt UpdateOrder.Arn
             - !GetAtt DeleteOrder.Arn
       Roles:
