@@ -54,6 +54,30 @@ Resources:
             Resource:
               - "*"
 
+  GetSingleOrder:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: api/functions/get-single-order/app.getOrderById
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ORDER_TABLE: !Ref OrderTable
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+            Resource:
+              - !Sub
+                - "arn:aws:dynamodb:*:*:table/${Table}"
+                - { Table: !Ref OrderTable }
+          - Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - "*"
+
   PostOrders:
     Type: AWS::Serverless::Function
     Properties:
@@ -120,6 +144,7 @@ Resources:
           Effect: Allow
           Resource:
             - !GetAtt GetOrders.Arn
+            - !GetAtt GetSingleOrder.Arn
             - !GetAtt PostOrders.Arn
       Roles:
         - Ref: "ApiGwExecutionRole"
@@ -132,6 +157,10 @@ Outputs:
   GetOrders:
     Description: "GetOrders Lambda Function ARN"
     Value: !GetAtt GetOrders.Arn
+
+  GetSingleOrder:
+    Description: "GetSingleOrder Lambda Function ARN"
+    Value: !GetAtt GetSingleOrder.Arn
 
   PostOrders:
     Description: "PostOrders Lambda Function ARN"
