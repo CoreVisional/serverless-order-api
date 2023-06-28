@@ -92,21 +92,21 @@ Resources:
             BatchSize: 10
       Environment:
         Variables:
-          ORDER_TABLE: !Ref OrderTable
+          STATE_MACHINE_ARN: !Ref OrderManagementSFN
       Policies:
         Statement:
-          - Effect: Allow
-            Action:
-              - dynamodb:PutItem
-            Resource:
-              - !Sub
-                - "arn:aws:dynamodb:*:*:table/${Table}"
-                - { Table: !Ref OrderTable }
           - Effect: Allow
             Action:
               - logs:*
             Resource:
               - "*"
+          - Effect: Allow
+            Action:
+              - states:StartExecution
+            Resource:
+              - !Sub
+                - "${StateMachine}"
+                - { StateMachine: !Ref OrderManagementSFN }
 
   UpdateOrder:
     Type: AWS::Serverless::Function
