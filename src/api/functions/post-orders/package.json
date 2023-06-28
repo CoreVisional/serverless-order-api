@@ -9,6 +9,7 @@
   "author": "Alex",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-sfn": "^3.360.0",
     "dayjs": "^1.11.8",
     "uuid": "^9.0.0"
   }
