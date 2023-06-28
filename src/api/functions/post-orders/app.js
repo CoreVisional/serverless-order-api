@@ -1,11 +1,9 @@
 import dayjs from "dayjs";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
 
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
+const sfnClient = new SFNClient({});
+const stateMachineArn = process.env.STATE_MACHINE_ARN;
 
-const tableName = process.env.ORDER_TABLE;
 const DEFAULT_ORDER_STATUS = "PENDING";
 
 const getCurrentDate = () => {
@@ -31,23 +29,29 @@ export const postOrders = async (event) => {
             orderStatus: DEFAULT_ORDER_STATUS,
         };
 
-        let params = {
-            TableName: tableName,
-            Item: item,
+        // Create step functions object from input and stateMachine arn.
+        const startReq = {
+            stateMachineArn: stateMachineArn,
+            input: JSON.stringify(item),
+            name: messageId,
         };
 
+        // Call the startExecution method of step functions client with input
         try {
-            const command = new PutCommand(params);
-            const data = await docClient.send(command);
-            console.log("Success for putting Item");
-            console.log(data);
-        } catch (err) {
-            console.log("Failure", err.message);
+            console.log("Starting an SFN execution: ", {
+                stateMachineArn: stateMachineArn,
+            });
+            const command = new StartExecutionCommand(startReq);
+            await sfnClient.send(command);
+            console.log("Job Completed");
+        } catch (error) {
+            console.log(error);
         }
     }
 
     const response = {
         statusCode: 200,
     };
+
     return response;
 };
