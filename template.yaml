@@ -162,6 +162,13 @@ Resources:
       CodeUri: src/manage/functions/process-payment/
       Handler: app.processPayment
       Runtime: nodejs18.x
+
+  SendOrderToRestaurantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/manage/functions/send-order/
+      Handler: app.sendOrder
+      Runtime: nodejs18.x
   OrderApi:
     Type: AWS::Serverless::Api
     Properties:
