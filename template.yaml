@@ -156,6 +156,12 @@ Resources:
             Resource:
               - "*"
 
+  ProcessPaymentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/manage/functions/process-payment/
+      Handler: app.processPayment
+      Runtime: nodejs18.x
   OrderApi:
     Type: AWS::Serverless::Api
     Properties:
