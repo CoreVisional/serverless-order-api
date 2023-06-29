@@ -14,62 +14,48 @@ const tableName = process.env.ORDER_TABLE;
 const snsTopicArn = process.env.SNS_TOPIC_ARN;
 
 export const manageState = async (event) => {
-    if ("sendOrderToRestaurant" in event) {
-        const orderStatus =
-            event["sendOrderToRestaurant"]["status"] == "error"
-                ? "FAILURE"
-                : "SUCCESS";
-        const params = createUpdateParams(event, orderStatus);
-        const result = await updatePut(params, orderStatus);
-        return result;
-    }
-
-    if ("paymentResult" in event) {
-        if (event["paymentResult"]["status"] == "error") {
-            const orderStatus = "FAILURE";
-            const params = createUpdateParams(event, orderStatus);
-            const result = await updatePut(params, orderStatus);
-            return result;
-        }
-    }
-
-    const response = await dynamoPut(event);
-    return response;
-};
-
-const createUpdateParams = (event, orderStatus) => {
-    let errorMessage = "";
-    let updateExpression = `set orderStatus = :s`;
-    let expressionAttributeValues = {
-        ":s": orderStatus,
-    };
+    let orderStatus = "SUCCESS";
+    let errorPath = "";
 
     if (
         "sendOrderToRestaurant" in event &&
         event["sendOrderToRestaurant"]["status"] === "error"
     ) {
-        errorMessage = event["sendOrderToRestaurant"]["errorMessage"];
-        updateExpression += `, errorMessage = :m`;
-        expressionAttributeValues[":m"] = errorMessage;
-    }
-
-    if (
+        orderStatus = "FAILURE";
+        errorPath = "sendOrderToRestaurant";
+    } else if (
         "paymentResult" in event &&
         event["paymentResult"]["status"] === "error"
     ) {
-        errorMessage = event["paymentResult"]["errorMessage"];
-        updateExpression += `, errorMessage = :m`;
-        expressionAttributeValues[":m"] = errorMessage;
+        orderStatus = "FAILURE";
+        errorPath = "paymentResult";
     }
 
-    let params = {
+    if (orderStatus === "FAILURE" || errorPath !== "") {
+        const params = createUpdateParams(event, orderStatus, errorPath);
+        const result = await updatePut(params, orderStatus);
+        return result;
+    }
+
+    return await dynamoPut(event);
+};
+
+const createUpdateParams = (event, orderStatus, errorPath) => {
+    const errorMessage = errorPath ? event[errorPath]["errorMessage"] : "";
+
+    const params = {
         TableName: tableName,
         Key: {
             user_id: event.user_id,
             id: event.id,
         },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeValues: expressionAttributeValues,
+        UpdateExpression: `set orderStatus = :s ${
+            errorMessage ? ", errorMessage = :m" : ""
+        }`,
+        ExpressionAttributeValues: {
+            ":s": orderStatus,
+            ":m": errorMessage,
+        },
         ReturnValues: "UPDATED_NEW",
     };
 
@@ -79,18 +65,21 @@ const createUpdateParams = (event, orderStatus) => {
 const updatePut = async (params, orderStatus) => {
     try {
         await docClient.send(new UpdateCommand(params));
-        await snsPublish(orderStatus);
+        await publishSNS(orderStatus);
         return {
             statusCode: 200,
             body: JSON.stringify("Successfully updated the item!"),
         };
     } catch (err) {
-        console.log("Failure", err.message);
+        return {
+            statusCode: 500,
+            body: JSON.stringify(`Error updating the item: ${err.message}`),
+        };
     }
 };
 
 const dynamoPut = async (event) => {
-    let item = {
+    const item = {
         user_id: event.user_id,
         id: event.id,
         name: event.name,
@@ -98,14 +87,10 @@ const dynamoPut = async (event) => {
         createdAt: event.createdAt,
         quantity: event.quantity,
         orderStatus: event.orderStatus,
+        messageId: event.messageId || null,
     };
 
-    // Check if the value is undefined as it is not always message id will be there in the event
-    if (event.messageId) {
-        item.messageId = event.messageId;
-    }
-
-    let params = {
+    const params = {
         TableName: tableName,
         Item: item,
     };
@@ -117,19 +102,21 @@ const dynamoPut = async (event) => {
             body: JSON.stringify("Successfully created the item!"),
         };
     } catch (err) {
-        console.log("Failure", err.message);
+        return {
+            statusCode: 500,
+            body: JSON.stringify(`Error creating the item: ${err.message}`),
+        };
     }
 };
 
-const snsPublish = async (status) => {
-    let message = `Order Status: ${status}`;
+const publishSNS = async (status) => {
     const input = {
         TopicArn: snsTopicArn,
-        Message: message,
+        Message: `Order Status: ${status}`,
     };
     try {
         await snsClient.send(new PublishCommand(input));
     } catch (err) {
-        console.log("Failure", err.message);
+        console.error(`Error sending SNS message: ${err.message}`);
     }
 };
