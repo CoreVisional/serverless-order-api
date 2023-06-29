@@ -169,6 +169,65 @@ Resources:
       CodeUri: src/manage/functions/send-order/
       Handler: app.sendOrder
       Runtime: nodejs18.x
+
+  ManageStateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/manage/functions/manage-order-state/
+      Handler: app.manageState
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          ORDER_TABLE: !Ref OrderTable
+          SNS_TOPIC_ARN: !Ref OrderTopic
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+            Resource:
+              - !Sub
+                - "arn:aws:dynamodb:*:*:table/${Table}"
+                - { Table: !Ref OrderTable }
+          - Effect: Allow
+            Action:
+              - logs:*
+            Resource:
+              - "*"
+          - Effect: Allow
+            Action:
+              - SNS:Publish
+            Resource:
+              - "*"
+
+  OrderTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: "test@email.com"
+          Protocol: "email"
+      TopicName: "order-topic"
+
+  OrderManagementSFN:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: src/manage/state-machine/processOrder.asl.json
+      DefinitionSubstitutions:
+        ManageStateArn: !GetAtt ManageStateFunction.Arn
+        ProcessPaymentArn: !GetAtt ProcessPaymentFunction.Arn
+        SendOrderToRestaurantArn: !GetAtt SendOrderToRestaurantFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ManageStateFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessPaymentFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref SendOrderToRestaurantFunction
+
   OrderApi:
     Type: AWS::Serverless::Api
     Properties:
