@@ -350,3 +350,11 @@ Outputs:
   OrderDLQueueUrl:
     Description: "URL of order dead-letter queue"
     Value: !Ref OrderDLQueue
+
+  CognitoClientID:
+    Description: "The client ID of the Cognito user pool"
+    Value: !Ref OrderCognitoPoolClient
+
+  CognitoUserPoolID:
+    Description: "ID of the Cognito userpool"
+    Value: !Ref OrderCognitoPool
