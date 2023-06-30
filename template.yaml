@@ -237,6 +237,11 @@ Resources:
         AllowHeaders: "'X-Forwarded-For'"
         AllowOrigin: "'*'"
         MaxAge: "'600'"
+      Auth:
+        DefaultAuthorizer: MyCognitoAuthorizer
+        Authorizers:
+          MyCognitoAuthorizer:
+            UserPoolArn: !GetAtt OrderCognitoPool.Arn
       DefinitionBody:
         "Fn::Transform":
           Name: "AWS::Include"
