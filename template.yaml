@@ -288,6 +288,32 @@ Resources:
   OrderDLQueue:
     Type: AWS::SQS::Queue
 
+  OrderCognitoPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: orders-pool
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+      UsernameAttributes:
+        - email
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+
+  OrderCognitoPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref OrderCognitoPool
+      ClientName: order-pool-client
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: true
+      SupportedIdentityProviders:
+        - COGNITO
+
 Outputs:
   DynamoDBTableName:
     Description: "DynamoDB Table Name"
