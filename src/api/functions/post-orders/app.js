@@ -18,9 +18,9 @@ export const postOrders = async (event) => {
         const { messageId, body } = record;
         let parsedBody = JSON.parse(body);
 
-        // Pass MessageId to Id parameter in Item payload instead of using uuid in Id
+        // Create an item object to be passed to step functions
         let item = {
-            user_id: "static_user",
+            user_id: parsedBody.cognito_userid,
             id: messageId,
             name: parsedBody.data.name,
             restaurantId: parsedBody.data.restaurantId,
