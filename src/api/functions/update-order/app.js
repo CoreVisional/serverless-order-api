@@ -29,7 +29,9 @@ export const updateOrder = async (event) => {
     let parsedBody = JSON.parse(body);
 
     let item = {
-        user_id: "static_user",
+        user_id:
+            event.requestContext.authorizer.claims["cognito:username"] ||
+            event.requestContext.authorizer.claims.username, // Lambda proxy from AWS ApiGateway will directly pass the cognito username.
         id: orderId,
     };
 
