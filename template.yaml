@@ -389,3 +389,11 @@ Outputs:
   CognitoUserPoolID:
     Description: "ID of the Cognito userpool"
     Value: !Ref OrderCognitoPool
+
+  CognitoDomain:
+    Description: "ID of the Cognito Domain"
+    Value: !Ref OrderCognitoDomain
+
+  CognitoResourceServer:
+    Description: "Cognito Resource Server"
+    Value: !Ref OrderCognitoResourceServer
