@@ -85,3 +85,6 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteOrder.Arn}/invocations
         passthroughBehavior: "when_no_match"
+      security:
+        - MyCognitoAuthorizer:
+            - "order-api/delete_order"
